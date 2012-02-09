@@ -26,14 +26,28 @@ namespace WpfTest
             catch (Exception ex)
             {
                 Console.WriteLine("   PROBLEM with web request {0}", ex.Message);
-                WebRequest wr = WebRequest.Create("http://www.stuff.co.nz");
+
+                //get last website visited
+                var countOfSites = listOfSitesVisited.Count;
+                var lastGoodWebsite = listOfSitesVisited[countOfSites - 2];
+
+                //WebRequest wr = WebRequest.Create("http://www.stuff.co.nz");
+                WebRequest wr = WebRequest.Create(lastGoodWebsite);
+
                 HttpWebResponse response = (HttpWebResponse)wr.GetResponse();
                 StreamReader sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
                 rawHtml = sr.ReadToEnd();
+                wasLastGetHtmlAnError = true;
 
+                return rawHtml;
             }
+
+            wasLastGetHtmlAnError = false;
             return rawHtml;
         }
+
+        bool wasLastGetHtmlAnError;
+        List<String> listOfSitesVisited;
 
         public string GetFirstLink(string initialWebsite)
         {
@@ -186,13 +200,15 @@ namespace WpfTest
             
         }
 
-        public IEnumerable<String> RunSpiderGetNext(string startingSite, int numberOfJumps)
+        public IEnumerable<thing> RunSpiderGetNext(string startingSite, int numberOfJumps)
         {
             string site = startingSite;
-            var listOfSitesVisited = new List<String>();
+            listOfSitesVisited = new List<String>();
+            string messages = "";
+            int noLinksFoundCounter = 0;
             for (int i = 1; i <= numberOfJumps; i++)
             {
-                Console.WriteLine("i is {0} Going to: {1} ", i, site);
+                messages += "i is " + i + " Going to: " + site + "\r\n";
                 string html = GetHtml(site);
 
                 //eg no links found, so when looping this site will already be in the list
@@ -205,7 +221,19 @@ namespace WpfTest
                 //eg a redirect can have no external links
                 if (listOfExternalLinks.Count > 0)
                 {
-                    string siteToGoToNext = listOfExternalLinks[0].ToString();
+                    string siteToGoToNext = "";
+                    //get random link of the page
+                    if (wasLastGetHtmlAnError)
+                    {
+                        int numberOfLinks = listOfExternalLinks.Count();
+                        Random r = new Random();
+                        int randomNumber = r.Next(1, numberOfLinks);
+                        siteToGoToNext = listOfExternalLinks[randomNumber].ToString();
+                    }
+                    else 
+                        siteToGoToNext = listOfExternalLinks[0].ToString();
+
+                    thing t = new thing();
                     bool keepGoing = true;
                     int j = 0;
 
@@ -215,21 +243,28 @@ namespace WpfTest
                         {
                             if (siteToGoToNext.Length > 30)
                             {
-                                Console.WriteLine("   length problem: siteToGoToNext: {0} ", siteToGoToNext);
+                                messages += "   length problem: siteToGoToNext: " + siteToGoToNext + "\r\n"; 
                                 j++;
                                 siteToGoToNext = listOfExternalLinks[j].ToString();
                             }
                             else if (listOfSitesVisited.Contains(siteToGoToNext))
                             {
-                                Console.WriteLine("   already visited problem: siteToGoToNext: {0} ", siteToGoToNext);
+                                messages += "   already visited problem: siteToGoToNext: " + siteToGoToNext + "\r\n";
                                 j++;
                                 siteToGoToNext = listOfExternalLinks[j].ToString();
                             }
                             else
                             {
-                                Console.WriteLine("   all good: siteToGoToNext: {0} ", siteToGoToNext);
+                                messages += "   all good: siteToGoToNext: " + siteToGoToNext + "\r\n";
                                 siteToGoToNext = listOfExternalLinks[j].ToString();
-                                yield return siteToGoToNext;
+                                //t.Uri = siteToGoToNext;
+                                t.Uri = site;
+                                t.Html = html;
+                                t.Messages = messages;
+                                t.SizeOfPageInBytes = html.Length;
+                                noLinksFoundCounter = 0;
+                                yield return t;
+                                //yield return siteToGoToNext;
                                 keepGoing = false;
                             }
                         }
@@ -237,13 +272,14 @@ namespace WpfTest
                         {
                             var countOfSites = listOfSitesVisited.Count;
                             var newsite = listOfSitesVisited[countOfSites - 2];
-                            Console.WriteLine("      run out of suitable links on {0} problem reverting to {1}", site, newsite);
+                            messages += "     run out of suitable links on " + site + " problem reverting to " + newsite + "\r\n";
                             site = newsite;
                             keepGoing = false;
                         }
                     }
 
                     site = siteToGoToNext;
+                    messages = "";
                 }
                 else
                 {
@@ -252,7 +288,18 @@ namespace WpfTest
                     //eg if first site given doesn't have any links
                     try
                     {
-                        site = listOfSitesVisited[countOfSites - 2];
+                        if (noLinksFoundCounter ==  0)
+                            site = listOfSitesVisited[countOfSites - 2];
+                        else if (noLinksFoundCounter == 1)
+                            site = listOfSitesVisited[countOfSites - 3];
+                        else
+                        {
+                            Random r = new Random();
+                            int randomSiteNumber = r.Next(0, countOfSites-3);
+                            site = listOfSitesVisited[randomSiteNumber];
+                        }
+
+                        noLinksFoundCounter++;
                     }
                     catch
                     {
@@ -261,9 +308,15 @@ namespace WpfTest
                     }
                 }
             }
-
-            //return listOfSitesVisited;
         }
+    }
+
+    public class thing
+    {
+        public string Uri { get; set; }
+        public string Html { get; set; }
+        public string Messages { get; set; }
+        public int SizeOfPageInBytes { get; set; }
     }
 
     [TestFixture]
@@ -273,8 +326,22 @@ namespace WpfTest
         //string startingSite = "http://www.cnn.com";
         //string startingSite = "http://www.holidayhouses.co.nz";
 
+
         [Test]
-        //events, tasks, reactive extensions.
+        public void RunSpiderAndGetNext_GivenAStartingWebsite_ReturnEachSiteVisitedNameHTMLAndBusinessLogicAndSizeOfPage()
+        {
+            Spider s = new Spider();
+
+            IEnumerable<thing> listOfThings = s.RunSpiderGetNext(startingSite, 5);
+
+            foreach (var item in listOfThings)
+            {
+                Console.WriteLine("XXX " + item.Uri);
+                Console.WriteLine("XXY" + item.Html);
+            }
+        }
+
+        [Test]
         public void RunSpiderAndGetNext_GivenAStartingWebsite_ReturnEachSiteVisitedName()
         {
             Spider s = new Spider();

@@ -27,40 +27,58 @@ namespace WpfTest
             InitializeComponent();
         }
 
+        public class ArgumentsToPassToBackgroundWorker
+        {
+            public string URL { get; set; }
+            public int NumberOfJumps { get; set; }
+        }
+
         private void button1_Click(object sender, RoutedEventArgs e)
         {
             worker.DoWork += new DoWorkEventHandler(worker_DoWork);
             worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(worker_RunWorkerCompleted);
 
-            worker.RunWorkerAsync("http://www.stuff.co.nz");
-            textBox1.Text = "done";
+            //worker.RunWorkerAsync("http://www.stuff.co.nz");
+            //var argumentsToPassToBackgroundWorker = new ArgumentsToPassToBackgroundWorker { URL = textBoxStartingURL.Text, NumberOfJumps = Convert.ToInt32(textBoxNumberOfJumps.Text) };
+            //worker.RunWorkerAsync("http://" + textBoxStartingURL.Text);
+            object[] arguments = { "http://" + textBoxStartingURL.Text, textBoxNumberOfJumps.Text };
+            //worker.RunWorkerAsync("http://" + textBoxStartingURL.Text);
+            worker.RunWorkerAsync(arguments);
         }
 
         public delegate void DoUIWorkHandler();
 
         public void worker_DoWork(object sender, DoWorkEventArgs args)
         {
-            string startingUri = (string)args.Argument;
-            //Spider s = new Spider();
+            //string startingUri = (string)args.Argument;
+            object[] arguments = (object[])args.Argument;
 
-            ////do little chunks of work
-            //var htmlToDisplay = s.GetHtml(startingUri);
-            
-            
-            //args.Result = htmlToDisplay;
-
+            string startingUri = (string)arguments[0];
+            string numberOfJumpsAsString = (string)arguments[1];
+            int numberOfJumps = Convert.ToInt32(numberOfJumpsAsString);
 
             Spider s = new Spider();
-            //string html = s.Start(startingSite);
 
-            var thing = s.RunSpiderGetNext(startingUri, 5);
+            IEnumerable<thing> listOfThings = s.RunSpiderGetNext(startingUri, numberOfJumps);
 
-            foreach (var item in thing)
+            int bytesTransferred = 0;
+            foreach (var item in listOfThings)
             {
-                var a = item;
-                Console.WriteLine("a is {0}", a);
                 //need to update the UI
-                textBox1.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { textBox1.Text += a + "\r\n"; });
+                textBox1.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { textBox1.Text += item.Uri + "\r\n"; });
+                textBox1.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { textBox1.ScrollToEnd(); });
+                
+                webBrowser.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { webBrowser.NavigateToString(item.Html); });
+
+                textBoxMessages.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { textBoxMessages.Text = item.Messages + "\r\n"; });
+
+                bytesTransferred += item.SizeOfPageInBytes;
+
+                decimal megaBytesTransferred = 0m;
+                megaBytesTransferred = (decimal)bytesTransferred / 1048576;
+                textBoxMBTransferred.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { textBoxMBTransferred.Text = megaBytesTransferred.ToString("#.##"); });
+
+                //System.Threading.Thread.Sleep(2000);
             }
 
         }
@@ -79,7 +97,7 @@ namespace WpfTest
 
         public void SuppressScriptErrors(System.Windows.Controls.WebBrowser wb, bool Hide)
         {
-            FieldInfo fi = typeof(System.Windows.Controls.WebBrowser).GetField("_axIWebBrowser2", BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo fi =typeof(System.Windows.Controls.WebBrowser).GetField("_axIWebBrowser2", BindingFlags.Instance | BindingFlags.NonPublic);
             if (fi != null)
             {
                 object browser = fi.GetValue(wb);
@@ -88,6 +106,7 @@ namespace WpfTest
             }
         }
 
+       
 
        
     }
