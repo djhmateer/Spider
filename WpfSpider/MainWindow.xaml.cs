@@ -24,6 +24,8 @@ namespace WpfTest
 
         public MainWindow()
         {
+            worker.DoWork += new DoWorkEventHandler(worker_DoWork);
+            worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(worker_RunWorkerCompleted);
             InitializeComponent();
         }
 
@@ -35,14 +37,9 @@ namespace WpfTest
 
         private void button1_Click(object sender, RoutedEventArgs e)
         {
-            worker.DoWork += new DoWorkEventHandler(worker_DoWork);
-            worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(worker_RunWorkerCompleted);
+            textBoxSitesVisited.Text = "";
 
-            //worker.RunWorkerAsync("http://www.stuff.co.nz");
-            //var argumentsToPassToBackgroundWorker = new ArgumentsToPassToBackgroundWorker { URL = textBoxStartingURL.Text, NumberOfJumps = Convert.ToInt32(textBoxNumberOfJumps.Text) };
-            //worker.RunWorkerAsync("http://" + textBoxStartingURL.Text);
-            object[] arguments = { "http://" + textBoxStartingURL.Text, textBoxNumberOfJumps.Text };
-            //worker.RunWorkerAsync("http://" + textBoxStartingURL.Text);
+            object[] arguments = { textBoxStartingURL.Text, textBoxNumberOfJumps.Text };
             worker.RunWorkerAsync(arguments);
         }
 
@@ -65,8 +62,8 @@ namespace WpfTest
             foreach (var item in listOfThings)
             {
                 //need to update the UI
-                textBox1.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { textBox1.Text += item.Uri + "\r\n"; });
-                textBox1.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { textBox1.ScrollToEnd(); });
+                textBoxSitesVisited.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { textBoxSitesVisited.Text += item.Uri + "\r\n"; });
+                textBoxSitesVisited.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { textBoxSitesVisited.ScrollToEnd(); });
                 
                 webBrowser.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { webBrowser.NavigateToString(item.Html); });
 

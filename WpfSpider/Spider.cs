@@ -14,7 +14,6 @@ namespace WpfTest
         public string GetHtml(string initialWebsite)
         {
             string rawHtml = "";
-            //if not a successful request then revert to stuff
             try
             {
                 WebRequest wr = WebRequest.Create(initialWebsite);
@@ -271,6 +270,9 @@ namespace WpfTest
                         else
                         {
                             var countOfSites = listOfSitesVisited.Count;
+                            if (countOfSites < 2)
+                                throw new Exception("Run out of suitable links and can't go to previous sites!");
+
                             var newsite = listOfSitesVisited[countOfSites - 2];
                             messages += "     run out of suitable links on " + site + " problem reverting to " + newsite + "\r\n";
                             site = newsite;
@@ -304,7 +306,7 @@ namespace WpfTest
                     catch
                     {
                         Console.WriteLine("      PROBLEM with first site not having any links");
-                        site = "http://www.stuff.co.nz";
+                        throw new Exception("First site doesn't have any links!");
                     }
                 }
             }
