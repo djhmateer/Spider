@@ -1,16 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Reflection;
 using System.ComponentModel;
 using System.Windows.Threading;
@@ -47,7 +36,6 @@ namespace WpfTest
 
         public void worker_DoWork(object sender, DoWorkEventArgs args)
         {
-            //string startingUri = (string)args.Argument;
             object[] arguments = (object[])args.Argument;
 
             string startingUri = (string)arguments[0];
@@ -56,10 +44,11 @@ namespace WpfTest
 
             Spider s = new Spider();
 
-            IEnumerable<thing> listOfThings = s.RunSpiderGetNext(startingUri, numberOfJumps);
+            //IEnumerable<WebPageInfo> listOfThings = s.RunSpiderGetNext(startingUri, numberOfJumps);
 
             int bytesTransferred = 0;
-            foreach (var item in listOfThings)
+            //foreach (var item in listOfThings)
+            foreach (var item in s.RunSpiderGetNext(startingUri, numberOfJumps))
             {
                 //need to update the UI
                 textBoxSitesVisited.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { textBoxSitesVisited.Text += item.Uri + "\r\n"; });
@@ -75,7 +64,7 @@ namespace WpfTest
                 megaBytesTransferred = (decimal)bytesTransferred / 1048576;
                 textBoxMBTransferred.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { textBoxMBTransferred.Text = megaBytesTransferred.ToString("#.##"); });
 
-                //System.Threading.Thread.Sleep(2000);
+                System.Threading.Thread.Sleep(2000);
             }
 
         }
