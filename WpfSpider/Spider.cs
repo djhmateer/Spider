@@ -120,7 +120,7 @@ namespace WpfTest
                     {
                         if (linkNumberOnPage < listOfExternalLinks.Count - 1)
                         {
-                            string[] blacklistStringArray = {"twitter", "mozilla", "firefox", "google", "youtube", "apple", "microsoft", "facebook", "itunes", "t.co", "fsf.org", "creativecommons.org"};
+                            string[] blacklistStringArray = {"twitter", "mozilla", "firefox", "google", "youtube", "apple", "microsoft", "facebook", "itunes", "t.co", "fsf.org", "creativecommons.org", "adobe", "yahoo"};
                             bool onBlackList = blacklistStringArray.Any(s => siteToGoToNext.Contains(s));
 
                             if (siteToGoToNext.Length > 30)

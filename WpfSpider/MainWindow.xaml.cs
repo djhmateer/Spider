@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Reflection;
 using System.ComponentModel;
@@ -13,69 +14,68 @@ namespace WpfTest
 
         public MainWindow()
         {
-            worker.DoWork += new DoWorkEventHandler(worker_DoWork);
-            worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(worker_RunWorkerCompleted);
             InitializeComponent();
-        }
-
-        public class ArgumentsToPassToBackgroundWorker
-        {
-            public string URL { get; set; }
-            public int NumberOfJumps { get; set; }
         }
 
         private void button1_Click(object sender, RoutedEventArgs e)
         {
             textBoxSitesVisited.Text = "";
 
+            worker.DoWork += new DoWorkEventHandler(worker_DoWork);
             object[] arguments = { textBoxStartingURL.Text, textBoxNumberOfJumps.Text };
             worker.RunWorkerAsync(arguments);
         }
-
-        public delegate void DoUIWorkHandler();
 
         public void worker_DoWork(object sender, DoWorkEventArgs args)
         {
             object[] arguments = (object[])args.Argument;
 
-            string startingUri = (string)arguments[0];
+            string startingSite = (string)arguments[0];
             string numberOfJumpsAsString = (string)arguments[1];
             int numberOfJumps = Convert.ToInt32(numberOfJumpsAsString);
 
             Spider s = new Spider();
 
-            //IEnumerable<WebPageInfo> listOfThings = s.RunSpiderGetNext(startingUri, numberOfJumps);
+            //deferred execution ie it wont call RunSpiderGetNext until it is iterated over in the foreach block
+            //a lazy enumerator sequence?
+            IEnumerable<WebPageInfo> listOfWebPageInfoOfSiteCurrentlyOn = s.RunSpiderGetNext(startingSite, numberOfJumps);
 
             int bytesTransferred = 0;
-            //foreach (var item in listOfThings)
-            foreach (var item in s.RunSpiderGetNext(startingUri, numberOfJumps))
+            foreach (var item in listOfWebPageInfoOfSiteCurrentlyOn)
             {
-                //need to update the UI
                 textBoxSitesVisited.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { textBoxSitesVisited.Text += item.Uri + "\r\n"; });
                 textBoxSitesVisited.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { textBoxSitesVisited.ScrollToEnd(); });
-                
-                webBrowser.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { webBrowser.NavigateToString(item.Html); });
 
                 textBoxMessages.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { textBoxMessages.Text = item.Messages + "\r\n"; });
 
+                webBrowser.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { webBrowser.NavigateToString(item.Html); });
+
                 bytesTransferred += item.SizeOfPageInBytes;
 
-                decimal megaBytesTransferred = 0m;
-                megaBytesTransferred = (decimal)bytesTransferred / 1048576;
+                var megaBytesTransferred = (decimal)bytesTransferred / 1048576;
                 textBoxMBTransferred.Dispatcher.Invoke(DispatcherPriority.Normal, (ThreadStart)delegate { textBoxMBTransferred.Text = megaBytesTransferred.ToString("#.##"); });
 
-                System.Threading.Thread.Sleep(2000);
+                //assigning the variable therefore I don't need a return
+                //bool? isSleepChecked = null;
+                //checkBoxSleep.Dispatcher.Invoke(new Action(() =>
+                //                                            {
+                //                                                isSleepChecked = checkBoxSleep.IsChecked;
+                //                                            })
+                //                                ,DispatcherPriority.Normal);
+
+
+                //using the func to return the nullable boolean.  lambda expression
+                //bool? isSleepChecked = (bool?)checkBoxSleep.Dispatcher.Invoke(new Func<bool?>(() => checkBoxSleep.IsChecked));
+                //rewritten using a delegate
+                bool? isSleepChecked = (bool?)checkBoxSleep.Dispatcher.Invoke(new Func<bool?>(delegate { return checkBoxSleep.IsChecked; }));
+
+                if (isSleepChecked == true)
+                    Thread.Sleep(2000);
             }
 
         }
 
-        public void worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs args)
-        {
-            //object result = args.Result;
-            //string result2 = result.ToString();
-            //webBrowser.NavigateToString(result2);
-        }
-
+        //to stop the annoying javascript popups in the wpf browser control
         void webBrowser_Navigated(object sender, System.Windows.Navigation.NavigationEventArgs e)
         {
             SuppressScriptErrors(webBrowser, true);
@@ -92,8 +92,7 @@ namespace WpfTest
             }
         }
 
-       
-
-       
+        private void checkBoxSleep_Checked(object sender, RoutedEventArgs e)
+        {}
     }
 }

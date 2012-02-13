@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Collections;
 using NUnit.Framework;
 
 namespace WpfTest
@@ -9,31 +7,70 @@ namespace WpfTest
     [TestFixture]
     public class YieldReturnTests
     {
-        List<string> listOfString = new List<string>();
-
-        public string Start(string startingSite)
+        //immediate execution (eager)
+        public IEnumerable Power(int number, int howManyToShow)
         {
-            listOfString.Add("a");
-            listOfString.Add("b");
-            listOfString.Add("c");
-            listOfString.Add("d");
-            listOfString.Add("e");
-            return "ok";
+            var result = new int[howManyToShow];
+            result[0] = number;
+            for (int i = 1; i < howManyToShow; i++)
+                result[i] = result[i - 1] * number;
+            return result;
         }
 
-        public IEnumerable<string> GetNext()
+        //deferred but eager
+        public IEnumerable PowerYieldEager(int number, int howManyToShow)
         {
-            foreach (var item in listOfString)
+            var result = new int[howManyToShow];
+            result[0] = number;
+            for (int i = 1; i < howManyToShow; i++)
+                result[i] = result[i - 1] * number;
+
+            foreach (var value in result)
+                yield return value;
+        }
+
+        //deferred and lazy
+        public IEnumerable PowerYieldLazy(int number, int howManyToShow)
+        {
+            int counter = 0;
+            int result = 1;
+            while (counter++ < howManyToShow)
             {
-                yield return item;
+                result = result * number;
+                yield return result;
             }
-
         }
+
+        
+        [Test]
+        public void Power_WhenPass2AndWant8Numbers_ReturnAnEnumerable()
+        {
+            IEnumerable listOfInts = Power(2, 8);
+
+            foreach (int i in listOfInts)
+                Console.Write("{0} ", i);
+        }
+
 
         [Test]
-        public void MethodUnderTest_scenario_expectedbehaviour()
+        public void PowerYieldEager_WhenPass2AndWant8Numbers_ReturnAnEnumerableOfInts()
         {
-            
+            //deferred but eager execution..unusual to do this
+            IEnumerable listOfInts = PowerYieldEager(2, 8);
+
+            foreach (int i in listOfInts)
+                Console.Write("{0} ", i);
+        }
+
+        //Does an IEnumerable have to use Yield to be deferred..essentially yes
+        [Test]
+        public void PowerYield_WhenPass2AndWant8Numbers_ReturnAnEnumerableOfIntsOneAtATime()
+        {
+            //deferred and lazy execution
+            IEnumerable listOfInts = PowerYieldLazy(2, 8);
+
+            foreach (int i in listOfInts)
+                Console.Write("{0} ", i);
         }
     }
 }

@@ -17,5 +17,7 @@
         <Label Content="Number of Jumps" Height="28" HorizontalAlignment="Left" Margin="547,26,0,0" Name="label3" VerticalAlignment="Top" />
         <TextBox Height="23" HorizontalAlignment="Left" Margin="669,27,0,0" Name="textBoxNumberOfJumps" VerticalAlignment="Top" Width="50" Text="50" />
         <Image Height="47" HorizontalAlignment="Left" Margin="12,12,0,0" Name="image1" Stretch="Fill" VerticalAlignment="Top" Width="61" Source="/WpfTest;component/Images/spider.jpg" />
+        <CheckBox Height="16" HorizontalAlignment="Right" Margin="0,29,185,0" Name="checkBoxSleep" VerticalAlignment="Top" Checked="checkBoxSleep_Checked" />
+        <Label Content="Sleep" Height="28" HorizontalAlignment="Left" Margin="758,26,0,0" Name="label4" VerticalAlignment="Top" />
     </Grid>
 </Window>
