@@ -18,9 +18,9 @@ namespace WpfTest
             string rawHtml = "";
             try
             {
-                WebRequest wr = WebRequest.Create(initialWebsite);
-                HttpWebResponse response = (HttpWebResponse)wr.GetResponse();
-                StreamReader sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
+                var wr = WebRequest.Create(initialWebsite);
+                var response = (HttpWebResponse)wr.GetResponse();
+                var sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
                 rawHtml = sr.ReadToEnd();
             }
             //eg 404
@@ -29,13 +29,13 @@ namespace WpfTest
                 Console.WriteLine("   PROBLEM with web request {0}", ex.Message);
 
                 //get last website visited..
-                var countOfSites = listOfSitesVisited.Count;
-                var lastGoodWebsite = listOfSitesVisited[countOfSites - 2];
+                int countOfSites = listOfSitesVisited.Count;
+                string lastGoodWebsite = listOfSitesVisited[countOfSites - 2];
 
                 WebRequest wr = WebRequest.Create(lastGoodWebsite);
 
-                HttpWebResponse response = (HttpWebResponse)wr.GetResponse();
-                StreamReader sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
+                var response = (HttpWebResponse)wr.GetResponse();
+                var sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
                 rawHtml = sr.ReadToEnd();
                 wasLastGetHtmlAnError = true;
 
