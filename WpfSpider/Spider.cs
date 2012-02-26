@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 namespace WpfTest
 {
     public class Spider
+
     {
         bool wasLastGetHtmlAnError;
         List<String> listOfSitesVisited;
